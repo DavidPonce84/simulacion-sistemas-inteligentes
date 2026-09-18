@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación del aula — Sistemas Inteligentes (MIA UDLA)</title>
+<style>
+  /* ---- Cascarón del aula (colores tomados de las capturas de referencia) ---- */
+  :root{
+    --wine:#7A1F2B;          /* barra de navegación del curso */
+    --wine-dark:#651823;
+    --blue:#1B6CB5;          /* enlaces y botones */
+    --blue-dk:#0F5C9E;
+    --ink:#212529;
+    --sub:#5b6270;
+    --line:#DEE2E6;
+    --line-soft:#ECEEF1;
+    --bg:#FFFFFF;
+    --bg-soft:#F5F6F8;
+    --deadline:#C0392B;
+    --ok:#1E7A46;
+    --gray-btn:#E9ECEF;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#EDEFF2;color:var(--ink);
+       font-family:"Open Sans","Segoe UI",Roboto,"Noto Sans",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+       font-size:15px;line-height:1.5}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ---- Barra de control de la MAQUETA (no es parte del aula) ---- */
+  .mockbar{background:#0B1E5B;color:#fff;padding:9px 16px;display:flex;flex-wrap:wrap;gap:10px;
+           align-items:center;justify-content:space-between;font-size:13px}
+  .mockbar .lbl{font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11.5px;opacity:.85}
+  .seg{display:inline-flex;border:1px solid rgba(255,255,255,.45);border-radius:999px;overflow:hidden}
+  .seg button{font:inherit;font-size:12.5px;padding:5px 14px;border:0;background:transparent;color:#fff;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:#fff;color:#0B1E5B;font-weight:700}
+
+  /* ---- Barra superior blanca ---- */
+  .topbar{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;
+          justify-content:space-between;gap:12px;padding:10px 16px}
+  .topbar .left{display:flex;align-items:center;gap:10px;min-width:0}
+  .icx{width:18px;height:18px;flex:0 0 18px;stroke:var(--sub);stroke-width:1.7;fill:none}
+  .dotsep{width:0;height:22px;border-left:1px dotted #c9ced6}
+  .logo{display:flex;align-items:center;gap:6px;color:var(--wine);font-weight:700;font-size:13px;letter-spacing:.02em}
+  .logo .mono{width:22px;height:22px;border:1.5px solid var(--wine);border-radius:4px;display:flex;
+              align-items:center;justify-content:center;font-size:10px;font-weight:700}
+  .coursetitle{font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .right{display:flex;align-items:center;gap:12px;color:var(--sub)}
+  .bell{position:relative}
+  .bell:after{content:"";position:absolute;top:-2px;right:-2px;width:7px;height:7px;border-radius:50%;
+              background:#F0A030;border:1.5px solid #fff}
+  .avatar{width:28px;height:28px;border-radius:6px;background:var(--blue);color:#fff;font-size:11px;
+          font-weight:700;display:flex;align-items:center;justify-content:center}
+  .uname{font-size:12.5px;color:var(--ink);font-weight:600;letter-spacing:.02em}
+
+  /* ---- Barra de navegación del curso (vino) ---- */
+  .coursenav{background:var(--wine);display:flex;flex-wrap:wrap;padding:0 10px}
+  .coursenav button{font:inherit;font-size:14px;color:#fff;background:transparent;border:0;padding:11px 14px;
+                    cursor:pointer;opacity:.9}
+  .coursenav button:hover{background:var(--wine-dark);opacity:1}
+  .coursenav button[aria-current="true"]{background:var(--wine-dark);opacity:1;font-weight:600;
+                                         box-shadow:inset 0 -3px 0 #fff}
+  .coursenav .more{display:inline-flex;align-items:center;gap:5px}
+
+  /* ---- Cuerpo ---- */
+  .body{display:grid;grid-template-columns:320px 1fr;align-items:start;background:#fff;min-height:640px}
+  @media (max-width:900px){.body{grid-template-columns:1fr}}
+
+  /* Índice del curso */
+  .index{border-right:1px solid var(--line);padding:12px 12px 24px;background:#fff}
+  .index .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .index .newunit{color:var(--blue);font-size:13px;font-weight:600}
+  .search{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;
+          padding:6px 12px;color:var(--sub);font-size:12.5px;margin-bottom:10px}
+  .search input{border:0;outline:0;font:inherit;font-size:12.5px;width:100%;color:var(--ink)}
+  .tree{list-style:none;margin:0;padding:0}
+  .tree button{display:flex;align-items:center;gap:7px;width:100%;text-align:left;font:inherit;
+               background:transparent;border:0;border-radius:6px;padding:6px 7px;color:var(--ink);
+               font-size:13px;cursor:pointer}
+  .tree button:hover{background:var(--bg-soft)}
+  .tree .wk{font-weight:600}
+  .tree .child{margin-left:20px;border-left:1px solid var(--line-soft);padding-left:8px}
+  .tree button[aria-current="true"]{background:#fff;border:1.5px solid var(--blue);font-weight:600}
+  .tree .caret{width:12px;color:var(--sub);font-size:10px}
+  .tree .doc{width:14px;height:14px;flex:0 0 14px;stroke:var(--sub);stroke-width:1.5;fill:none}
+  .deadline{color:var(--deadline);font-size:11.5px;margin:1px 0 4px 34px}
+
+  /* Contenido */
+  .content{padding:14px 22px 30px;min-width:0}
+  .contentbar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+              border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:14px}
+  .contentbar .state{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}
+  .toggle{width:30px;height:17px;border-radius:999px;background:var(--blue);position:relative}
+  .toggle:after{content:"";position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;
+                background:#fff}
+  .contentbar .actions{display:flex;align-items:center;gap:8px}
+  .btn{font:inherit;font-size:12.5px;border-radius:6px;padding:6px 12px;border:1px solid var(--line);cursor:pointer}
+  .btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn.sec{background:var(--gray-btn);color:var(--ink)}
+  .btn.icon{padding:6px 9px;background:#fff;color:var(--sub)}
+  .content h1{font-size:24px;font-weight:700;margin:2px 0 12px}
+
+  .banner{background:linear-gradient(100deg,#0B1E5B 0%,#12306F 45%,#1B3FA0 100%);
+          border-radius:8px;color:#fff;padding:26px 22px;margin-bottom:16px;position:relative;overflow:hidden}
+  .banner .t{font-size:21px;font-weight:700;letter-spacing:.02em}
+  .banner .s{font-size:13px;opacity:.9;margin-top:5px;max-width:70%}
+  .banner .glow{position:absolute;right:-40px;top:-40px;width:220px;height:220px;border-radius:50%;
+                background:radial-gradient(circle,rgba(79,195,247,.45),transparent 65%)}
+
+  .block{margin-bottom:18px}
+  .block .bt{font-weight:700;margin-bottom:4px}
+  .block .bt.it{font-style:italic;font-weight:700}
+  .block p{margin:0 0 8px;font-size:14px}
+  .bullet{list-style:none;margin:0 0 10px;padding:0}
+  .bullet li{position:relative;padding-left:16px;margin-bottom:6px;font-size:14px}
+  .bullet li:before{content:"";position:absolute;left:2px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--ink)}
+
+  table.acts{border-collapse:collapse;width:100%;font-size:13.5px;border:1px solid var(--line)}
+  table.acts th{background:var(--line);text-align:center;font-weight:700;padding:8px 10px;border:1px solid #cfd4da}
+  table.acts td{border:1px solid var(--line);padding:9px 11px;vertical-align:top}
+  table.acts td.pond{text-align:center;width:210px;color:var(--ink)}
+  .chipn{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+         color:var(--ok);background:rgba(30,122,70,.12);border:1px solid rgba(30,122,70,.32);
+         border-radius:999px;padding:1px 7px;margin-left:7px;vertical-align:middle}
+  .hab{margin-top:6px;font-size:12px;color:var(--sub);border-left:3px solid var(--wine);padding-left:8px}
+  .tut{font-size:12px;margin-top:4px}
+  .pill{display:inline-block;font-size:11px;font-weight:700;color:#fff;background:var(--wine);
+        border-radius:999px;padding:2px 9px;margin-left:6px}
+  .muted{color:var(--sub);font-size:12.5px}
+  .warn{border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:6px;padding:10px 12px;
+        background:var(--bg-soft);font-size:13px;color:var(--sub);margin-top:14px}
+  footer.mockfoot{background:#fff;border-top:1px solid var(--line);padding:10px 16px;color:var(--sub);font-size:11.5px}
+</style>
+</head>
+<body>
+
+<!-- Controles de la maqueta (no forman parte del aula) -->
+<div class="mockbar">
+  <span class="lbl">Maqueta de revisión · comparar</span>
+  <div class="seg" role="group" aria-label="Modo">
+    <button id="m-antes" aria-pressed="true">Aula actual (antes)</button>
+    <button id="m-despues" aria-pressed="false">Aula propuesta (después)</button>
+  </div>
+</div>
+
+<!-- Barra superior -->
+<div class="topbar">
+  <div class="left">
+    <svg class="icx" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+    <span class="dotsep"></span>
+    <span class="logo"><span class="mono">aula</span></span>
+    <span class="dotsep"></span>
+    <span class="coursetitle">SISTEMAS INTELIGENTES · MIA</span>
+  </div>
+  <div class="right">
+    <svg class="icx" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span class="dotsep"></span>
+    <svg class="icx" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+    <svg class="icx" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12Z"/></svg>
+    <span class="bell"><svg class="icx" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+    <span class="dotsep"></span>
+    <span class="avatar">DP</span>
+    <span class="uname">DAVID PONCE</span>
+    <svg class="icx" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+  </div>
+</div>
+
+<!-- Navegación del curso -->
+<div class="coursenav" id="coursenav"></div>
+
+<div class="body">
+  <aside class="index" id="index"></aside>
+  <main class="content" id="content"></main>
+</div>
+
+<footer class="mockfoot">
+  Maqueta de revisión. Los rótulos de las secciones, la barra de navegación y el índice replican las capturas del aula;
+  los contenidos provienen del sílabo registrado (citas literales) y de la propuesta de actualización.
+  Las ponderaciones se mantienen en 10 / 15 / 20 / 20 / 10 / 25 = 100 % en ambos modos.
+  Las fechas límite se muestran como referencia de diseño.
+</footer>
+
+<script>
+const TUT = {
+  ini:"https://docs.dify.ai/en/cloud/use-dify/getting-started/introduction",
+  key:"https://docs.dify.ai/en/cloud/use-dify/workspace/model-providers",
+  con:"https://docs.dify.ai/en/learn/key-concepts",
+  herr:"https://docs.dify.ai/en/cloud/use-dify/workspace/tools",
+  kb:"https://docs.dify.ai/en/cloud/use-dify/knowledge/readme",
+  test:"https://docs.dify.ai/en/cloud/use-dify/knowledge/test-retrieval",
+  intg:"https://docs.dify.ai/en/cloud/use-dify/knowledge/integrate-knowledge-within-application",
+  mcp:"https://docs.dify.ai/en/cloud/use-dify/publish/publish-mcp",
+  prompt:"https://www.promptingguide.ai/"
+};
+
+/* Estructura por semana: pre | sinc | post, en dos modos (antes / despues) */
+const WEEKS = [
+ {
+  id:"s1", label:"Semana 1", banner:"SEMANA 1 · FUNDAMENTOS Y SOLUCIÓN DE PROBLEMAS",
+  units:"UNIDAD 1: INTRODUCCION A LA INTELIGENCIA ARTIFICIAL · Introducción, Breve Historia de la Inteligencia Artificial, Agentes Inteligentes  |  UNIDAD 2: SOLUCION DE PROBLEMAS · Búsqueda No-Informada, Búsqueda Informada, Teoría de Juegos",
+  antes:{
+   pre:[
+    {t:"Video: IA en la Actualidad", d:"Resume los usos de la IA en los medios y la vida cotidiana.", m:"15 min"},
+    {t:"Presentación: Agentes Inteligentes", d:"Define a los agentes inteligentes y el enfoque de trabajo de la IA.", m:"30 min"},
+    {t:"Lectura complementaria", d:"Historia de la IA: expone el contexto histórico del desarrollo de la IA.", m:"30 min"},
+    {t:"Presentación: Solución de Problemas Mediante Búsqueda", d:"Resume los métodos de búsqueda no informada e informada.", m:"60 min"},
+    {t:"Presentación: Búsqueda entre Adversarios", d:"Expone estrategias de IA para la toma de decisiones óptimas en juegos.", m:"45 min"},
+    {t:"Lectura complementaria", d:"Algoritmos de Búsqueda Local: métodos de búsqueda en los que no importa el camino tomado.", m:"45 min"}
+   ],
+   sinc:{t:"Agentes Inteligentes y la definición de IA · Solucionando Problemas con Búsqueda",
+     a:["Diálogo abierto para conocer la experiencia de los estudiantes con la IA y cómo la definen.",
+        "Debate acerca del paradigma actual de la IA.",
+        "Diálogo para definir heurísticas admisibles con ejemplos y diapositivas.",
+        "Conversación sobre los juegos de su predilección y la complejidad de estos para un algoritmo de búsqueda."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Lectura complementaria: Algoritmos de Búsqueda Local.",
+     acts:[{t:"Foro: Investigación de casos de IA", d:"De manera individual, el estudiante selecciona un caso de IA que le atraiga y comenta las razones de su interés.", w:"10 % de la calificación del curso", m:"60 min"},
+           {t:"Tarea: Heurísticas Admisibles y Consistentes (Cuestionario)", d:"El alumno tendrá que definir si la función heurística planteada para el problema es admisible, consistente, ambas o ninguna.", w:"15 % de la calificación del curso"}]}
+  },
+  despues:{
+   pre:[
+    {t:"Video: IA en la Actualidad", d:"Resume los usos de la IA en los medios y la vida cotidiana.", m:"15 min"},
+    {t:"Presentación: Agentes Inteligentes", d:"Define a los agentes inteligentes y el enfoque de trabajo de la IA.", m:"30 min"},
+    {t:"Guía PDF de la tarea S1a", d:"Paso a paso para crear el primer agente, sin código.", m:"30 min", nuevo:true, tut:"ini", tutLabel:"Tutorial: primeros pasos en la plataforma"},
+    {t:"Lectura complementaria", d:"Historia de la IA: expone el contexto histórico del desarrollo de la IA.", m:"30 min"},
+    {t:"Presentación: Solución de Problemas Mediante Búsqueda", d:"Se conserva la búsqueda clásica y se añade la búsqueda vectorial como concepto.", m:"60 min", nuevo:true},
+    {t:"Guía PDF de la tarea S1b", d:"Cómo conectar una herramienta al agente que ya construyó.", m:"20 min", nuevo:true, tut:"herr", tutLabel:"Tutorial: herramientas"}
+   ],
+   sinc:{t:"Agentes Inteligentes y la definición de IA · Demostración guiada",
+     a:["Diálogo abierto y debate; se presenta la forma actual del agente: agente con herramientas.",
+        "Demostración en vivo del flujo entrada → herramienta → salida, antes de que el estudiante lo replique."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Guía de instrucciones para el modelo (prompting) y conceptos clave de la plataforma.",
+     acts:[{t:"Micro-entregable S1a: agente simple", d:"Crea un agente que responde preguntas de su sector y publica en el foro una demo de 2 minutos más un párrafo sobre la técnica que usa. Se conserva el foro como formato.", w:"10 % de la calificación del curso", m:"60 min", nuevo:true,
+            hab:"Concepto habilitante: qué es un agente y qué es un modelo de lenguaje · se enseña esta semana (U1)"},
+           {t:"Micro-entregable S1b: conexión de herramientas", d:"Al mismo agente se le conecta una herramienta (búsqueda web) y se documenta el flujo. El razonamiento de diseño sustituye al cuestionario abstracto.", w:"15 % de la calificación del curso", nuevo:true,
+            hab:"Concepto habilitante: agente + herramientas · se enseña después del agente simple, esta semana",
+            tut:"herr", tutLabel:"Tutorial: conectar una herramienta al agente"}]}
+  }
+ },
+ {
+  id:"s2", label:"Semana 2", banner:"SEMANA 2 · DECISIONES EN ENTORNOS DE INCERTIDUMBRE",
+  units:"UNIDAD 3: TOMA DE DECISIONES EN ENTORNOS DE INCERTIDUMBRE · Redes Bayesianas, Modelos Ocultos de Márkov, Teoría de Utilidad y Procesos de Decisión de Márkov",
+  antes:{
+   pre:[
+    {t:"Presentación: Simplificación del mundo", d:"Explica cómo modelar eventos inciertos y aplicarlos en predicción del clima, deportes o tráfico.", m:"60 min"},
+    {t:"Presentación: Modelos de Márkov", d:"Define los modelos de Márkov como evaluación de procesos cambiantes con el tiempo.", m:"30 min"},
+    {t:"Presentación: Teoría de Utilidad", d:"Resume el uso de una definición de utilidad para optimizar la toma de decisiones.", m:"15 min"},
+    {t:"Lectura complementaria", d:"Repaso de Probabilidad: definiciones útiles para los modelos probabilísticos de IA.", m:"30 min"}
+   ],
+   sinc:{t:"Entornos Probabilistas e Incertidumbre",
+     a:["Se explica la definición de incertidumbre y los alumnos modelan un evento probabilista (por ejemplo, una alarma de incendios).",
+        "Se discute una de las aplicaciones más importantes de los modelos probabilistas: el reconocimiento del habla."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Repaso de Probabilidad.",
+     acts:[{t:"Tarea: Filtrando Spam", d:"Los alumnos, en parejas, diseñarán un filtro de spam basados en un filtro Bayesiano.", w:"20 % de la calificación del curso", m:"2 h"}]}
+  },
+  despues:{
+   pre:[
+    {t:"Presentación: Simplificación del mundo", d:"Explica cómo modelar eventos inciertos y aplicarlos en predicción del clima, deportes o tráfico.", m:"60 min"},
+    {t:"Presentación: Modelos de Márkov", d:"Define los modelos de Márkov como evaluación de procesos cambiantes con el tiempo.", m:"30 min"},
+    {t:"Presentación: Teoría de Utilidad", d:"Resume el uso de una definición de utilidad para optimizar la toma de decisiones.", m:"15 min"},
+    {t:"Guía PDF: calibración de la confianza y umbral", d:"Cómo decidir cuándo el modelo no está seguro y debe escalar a una persona.", m:"30 min", nuevo:true},
+    {t:"Lectura complementaria", d:"Repaso de Probabilidad: definiciones útiles para los modelos probabilísticos de IA.", m:"30 min"}
+   ],
+   sinc:{t:"Entornos Probabilistas e Incertidumbre",
+     a:["Se conserva el modelado de eventos inciertos y la discusión del reconocimiento del habla.",
+        "Se añade la incertidumbre en la práctica: calibración de la confianza y escalamiento a una persona (human-in-the-loop)."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Repaso de Probabilidad.",
+     acts:[{t:"Micro-entregable S2: clasificador con escalamiento", d:"En parejas: clasificador de solicitudes con umbral de incertidumbre y escalamiento a una persona cuando el modelo no está seguro. El filtro bayesiano se conserva como base y se compara con un modelo de lenguaje.", w:"20 % de la calificación del curso", m:"2 h", nuevo:true,
+            hab:"Concepto habilitante: incertidumbre y umbral de confianza · se enseña esta semana (U3)"}]}
+  }
+ },
+ {
+  id:"s3", label:"Semana 3", banner:"SEMANA 3 · MACHINE LEARNING",
+  units:"UNIDAD 4: MACHINE LEARNING · Aprendizaje Supervisado y No Supervisado, Técnicas de Aprendizaje, Redes Neuronales, Aprendizaje Reforzado",
+  antes:{
+   pre:[
+    {t:"Presentación: Separando los Datos", d:"Resume cómo separar los datos de entrada en entrenamiento, validación y pruebas.", m:"15 min"},
+    {t:"Presentación: Algoritmos de Aprendizaje Supervisado", d:"Explica las bases de regresión lineal, Bayes ingenuo y perceptrones.", m:"60 min"},
+    {t:"Presentación: Redes Neuronales", d:"Introduce la idea de redes neuronales como evolución del aprendizaje supervisado.", m:"30 min"},
+    {t:"Presentación: Aprendizaje Reforzado", d:"Explica cómo los algoritmos aprenden la política óptima por prueba y error.", m:"45 min"},
+    {t:"Lectura complementaria", d:"Desarrollo de sistemas de aprendizaje automático · estilos de aprendizaje.", m:"30 min"}
+   ],
+   sinc:{t:"Estilos de Aprendizaje",
+     a:["Se discute la definición de aprendizaje en los humanos y cómo se aplica al aprendizaje de máquina.",
+        "Se expone una aplicación de modelos de aprendizaje: el reconocimiento de escritura a mano.",
+        "Se debate la definición de sintiencia y si las máquinas pueden alcanzarla."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Técnicas y estrategias de desarrollo de aplicaciones que utilizan Machine Learning.",
+     acts:[{t:"Infografía: El problema del viajante", d:"Los alumnos plantean su método particular para solucionar el problema del viajante, así como las aplicaciones del problema en la práctica.", w:"20 % de la calificación del curso", m:"60 min"},
+           {t:"Tarea: Técnicas de IA (Cuestionario)", d:"El alumno tendrá que identificar la técnica de IA utilizada en diferentes aplicaciones online.", w:"10 % de la calificación del curso", m:"30 min"}]}
+  },
+  despues:{
+   pre:[
+    {t:"Presentación: Separando los Datos", d:"Resume cómo separar los datos de entrada en entrenamiento, validación y pruebas.", m:"15 min"},
+    {t:"Presentación: Taxonomía de modelos y costo de uso", d:"Modelos clásicos, fundacionales y especializados; cómo se compara el costo de usarlos.", m:"30 min", nuevo:true},
+    {t:"Guía PDF: recuperación aumentada (concepto)", d:"Qué es recuperar información de una base propia antes de responder, explicado sin código.", m:"30 min", nuevo:true,
+     tut:"kb", tutLabel:"Tutorial: base de conocimiento"},
+    {t:"Presentación: Redes Neuronales", d:"Introduce la idea de redes neuronales como evolución del aprendizaje supervisado.", m:"30 min"},
+    {t:"Presentación: Algoritmos de Aprendizaje Supervisado", d:"Explica las bases de regresión lineal, Bayes ingenuo y perceptrones.", m:"60 min"},
+    {t:"Presentación: Aprendizaje Reforzado", d:"Explica cómo los algoritmos aprenden la política óptima por prueba y error.", m:"45 min"}
+   ],
+   sinc:{t:"Estilos de Aprendizaje · Recuperación aumentada",
+     a:["Se conserva la discusión sobre aprendizaje, el reconocimiento de escritura a mano y el debate sobre sintiencia.",
+        "Se presenta la recuperación aumentada como concepto ANTES de pedir el entregable que la aplica."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Guía de prompting · curso de LLM de Hugging Face (nivel avanzado).",
+     acts:[{t:"Micro-entregable S3a: matriz de selección y costos", d:"Matriz de selección tecnológica y financiera para un caso real, comparando dos modelos (Flash y Pro) y midiendo costo y calidad. Conserva el razonamiento de selección de la infografía.", w:"20 % de la calificación del curso", m:"60 min", nuevo:true,
+            hab:"Concepto habilitante: taxonomía de modelos y costo por uso · se enseña en la pre-sesión de esta semana"},
+           {t:"Micro-entregable S3b: asistente con base de conocimiento", d:"Carga un conjunto de documentos propio o sectorial y construye un asistente que responde con esa base; prueba la recuperación y documenta la técnica. Identifica técnicas construyéndolas.", w:"10 % de la calificación del curso", m:"90 min", nuevo:true,
+            hab:"Concepto habilitante: recuperación aumentada · se enseña ANTES de este entregable (pre-sesión + encuentro sincrónico)",
+            tut:"intg", tutLabel:"Tutorial: integrar la base de conocimiento"}]}
+  }
+ },
+ {
+  id:"s4", label:"Semana 4", banner:"SEMANA 4 · APLICACIONES DE LA INTELIGENCIA ARTIFICIAL",
+  units:"UNIDAD 5: APLICACIONES DE LA INTELIGENCIA ARTIFICIAL · Procesamiento de Lenguaje Natural, Visión Artificial, Medicina",
+  antes:{
+   pre:[
+    {t:"Presentación: Aplicaciones de la IA", d:"Expone las técnicas usadas en lingüística, medicina, cadenas de suministro y la investigación futura en el campo comercial.", m:"30 min"},
+    {t:"Video: Visión Artificial para detección de cáncer", d:"Presenta la aplicación de algoritmos de IA para aplicaciones médicas.", m:"15 min"},
+    {t:"Video: IA y los modelos de predicción", d:"Presenta el uso de la IA para la predicción de infartos o estructuras de proteínas.", m:"30 min"},
+    {t:"Presentación: Explicabilidad de la IA", d:"Presenta las ventajas y desventajas de un modelo de caja negra y el movimiento hacia una IA explicable.", m:"30 min"}
+   ],
+   sinc:{t:"Aplicaciones y Futuro de la IA",
+     a:["Los alumnos discuten qué técnica es utilizada en varios ejemplos presentados de IA.",
+        "Se proponen fundamentos de aplicaciones futuras de IA (IA general, inteligencia vs razonamiento).",
+        "Se discuten las ventajas y desventajas de un modelo de caja negra y la importancia de la explicabilidad."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Presentaciones y videos de la semana.",
+     acts:[{t:"Estudio de caso: Aplicaciones de la IA", d:"Los estudiantes, en parejas, analizarán un caso de aplicación actual de IA y detallarán la técnica de IA utilizada.", w:"25 % de la calificación del curso", m:"3 h"}]}
+  },
+  despues:{
+   pre:[
+    {t:"Presentación: Aplicaciones de la IA", d:"Expone las técnicas usadas en lingüística, medicina, cadenas de suministro y la investigación futura en el campo comercial.", m:"30 min"},
+    {t:"Presentación: Sistemas multimodales y arquitectura de solución", d:"Cómo se integra un agente, una base de conocimiento y una herramienta en una solución completa.", m:"30 min", nuevo:true},
+    {t:"Video: Visión Artificial para detección de cáncer", d:"Presenta la aplicación de algoritmos de IA para aplicaciones médicas.", m:"15 min"},
+    {t:"Presentación: Explicabilidad de la IA", d:"Presenta las ventajas y desventajas de un modelo de caja negra y el movimiento hacia una IA explicable.", m:"30 min"},
+    {t:"Plantilla del prototipo final", d:"Estructura de entrega: problema, técnica, evidencia y mención breve de privacidad y sesgo.", m:"20 min", nuevo:true}
+   ],
+   sinc:{t:"Aplicaciones y Futuro de la IA · Arquitectura de solución",
+     a:["Se conserva la discusión de aplicaciones, el debate sobre aplicaciones futuras y la explicabilidad.",
+        "Se cierra con el modelo de arquitectura de solución que el prototipo final debe seguir."], m:"120 min"},
+   post:{comp:"Material complementario", compTxt:"Curso de Agentes de Hugging Face (nivel avanzado) · tutorial de publicación como servidor MCP.",
+     acts:[{t:"Proyecto final: prototipo funcional", d:"En parejas: prototipo funcional (agente + base de conocimiento + una herramienta) aplicado a un problema real de su industria, con documento de dos páginas que detalla la técnica y una mención breve de privacidad y sesgo.", w:"25 % de la calificación del curso", m:"3 h", nuevo:true,
+            hab:"Concepto habilitante: integración de agente + recuperación + herramienta · se enseña esta semana (U5)",
+            tut:"mcp", tutLabel:"Tutorial (opcional): publicar el asistente"}]}
+  }
+ }
+];
+
+const EVAL = [
+ {s:"S1a", antes:"Foro: Investigación de casos de IA", despues:"Agente simple (demo en el foro)", w:"10 %"},
+ {s:"S1b", antes:"Tarea: Heurísticas Admisibles y Consistentes (cuestionario)", despues:"Conexión de herramientas al agente", w:"15 %"},
+ {s:"S2",  antes:"Tarea: Filtrando Spam (filtro bayesiano)", despues:"Clasificador con umbral y escalamiento a una persona", w:"20 %"},
+ {s:"S3a", antes:"Infografía: El problema del viajante", despues:"Matriz de selección tecnológica y de costos", w:"20 %"},
+ {s:"S3b", antes:"Tarea: Técnicas de IA (cuestionario)", despues:"Asistente con base de conocimiento propia", w:"10 %"},
+ {s:"S4",  antes:"Estudio de caso: Aplicaciones de la IA", despues:"Prototipo funcional (agente + recuperación + herramienta)", w:"25 %"}
+];
+
+const RECURSOS = [
+ {t:"Primeros pasos en la plataforma de agentes", u:TUT.ini},
+ {t:"Conectar el proveedor de modelo y cargar la clave de API", u:TUT.key},
+ {t:"Conceptos clave de la plataforma", u:TUT.con},
+ {t:"Herramientas: conectar una herramienta al agente", u:TUT.herr},
+ {t:"Base de conocimiento: construirla", u:TUT.kb},
+ {t:"Probar la recuperación de la base de conocimiento", u:TUT.test},
+ {t:"Integrar la base de conocimiento en la aplicación", u:TUT.intg},
+ {t:"Publicar el asistente como servidor MCP (nivel avanzado)", u:TUT.mcp},
+ {t:"Guía de instrucciones para el modelo (prompting)", u:TUT.prompt}
+];
+
+const SECTIONS = [
+  {k:"pre",  n:"Materiales y actividades pre sesión"},
+  {k:"sinc", n:"Encuentro sincrónico"},
+  {k:"post", n:"Material y actividades post sesión"}
+];
+
+let mode = "antes";
+let week = "s1";
+let section = "post";   // el aula abre por la sección de entregables
+let view = "contenido"; // contenido | tareas | calificaciones | recursos
+
+const IC = {
+  caret:'<span class="caret">▾</span>',
+  caretR:'<span class="caret">▸</span>',
+  doc:'<svg class="doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>'
+};
+
+function renderNav(){
+  const items = ["Página de Inicio","Contenido","Tareas","Cuestionarios","Foros","Calificaciones","Listado de alumnos","Grupos","Encuestas"];
+  let h = "";
+  items.forEach(n => {
+    let cur = false, go = false;
+    if (n === "Contenido" && view === "contenido") cur = true, go = true;
+    if (n === "Tareas" && view === "tareas") cur = true, go = true;
+    if (n === "Calificaciones" && view === "calificaciones") cur = true, go = true;
+    h += `<button data-nav="${n}" data-go="${go?1:0}" aria-current="${cur}">${n}</button>`;
+  });
+  h += `<button class="more" data-nav="Más" data-go="0">Más ▾</button>`;
+  const nav = document.getElementById("coursenav");
+  nav.innerHTML = h;
+  nav.querySelectorAll("button").forEach(b => b.onclick = () => {
+    if (b.dataset.go === "1") { view = b.dataset.nav === "Tareas" ? "tareas" : (b.dataset.nav === "Calificaciones" ? "calificaciones" : "contenido"); render(); }
+    else { view = "contenido"; render(); }
+  });
+}
+
+function renderIndex(){
+  let h = '<div class="head"><span class="newunit">＋ Nueva unidad</span>'
+        + '<svg class="icx" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9 2 2 0 1 1-2.8 2.8 1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2 2 2 0 1 1-2.8-2.8A1.7 1.7 0 0 0 3 15a2 2 0 1 1 0-4 1.7 1.7 0 0 0 1.2-2.9 2 2 0 1 1 2.8-2.8A1.7 1.7 0 0 0 9 4.6a2 2 0 1 1 4 0 1.7 1.7 0 0 0 2.9 1.2 2 2 0 1 1 2.8 2.8A1.7 1.7 0 0 0 21 11a2 2 0 1 1 0 4Z"/></svg></div>';
+  h += '<div class="search"><input placeholder="Buscar títulos y descripciones" readonly>'
+     + '<svg class="icx" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>';
+  h += '<ul class="tree">';
+  WEEKS.forEach(w => {
+    const open = (w.id === week);
+    h += `<li><button class="wk" data-wk="${w.id}">${open?IC.caret:IC.caretR}${w.label}</button>`;
+    if (open) {
+      h += '<div class="child">';
+      SECTIONS.forEach(s => {
+        const cur = (view === "contenido" && section === s.k);
+        h += `<button data-sec="${s.k}" aria-current="${cur}">${s.k!=="sinc"?IC.doc:"◻"}${s.n}</button>`;
+      });
+      h += '</div>';
+    }
+    h += '</li>';
+  });
+  h += '</ul>';
+  h += '<ul class="tree" style="margin-top:10px;border-top:1px solid var(--line-soft);padding-top:8px">'
+     + `<li><button data-extra="recursos">${IC.doc}Recursos y tutoriales de la maqueta</button></li></ul>`;
+  const el = document.getElementById("index");
+  el.innerHTML = h;
+  el.querySelectorAll("button").forEach(b => b.onclick = () => {
+    if (b.dataset.wk) { week = b.dataset.wk; view = "contenido"; render(); }
+    else if (b.dataset.sec) { section = b.dataset.sec; view = "contenido"; render(); }
+    else if (b.dataset.extra) { view = "recursos"; render(); }
+  });
+}
+
+function head(){
+  return '<div class="contentbar"><div class="state"><span class="toggle"></span>'
+    + '<svg class="icx" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>'
+    + 'Visible</div><div class="actions">'
+    + '<button class="btn pri">Agregar existente</button><button class="btn sec">Crear nuevo</button>'
+    + '<button class="btn icon">•••</button><button class="btn icon">‹</button><button class="btn icon">›</button>'
+    + '</div></div>';
+}
+
+function banner(w){
+  return `<div class="banner"><div class="glow"></div><div class="t">${w.banner}</div>`
+       + `<div class="s">${w.units}</div></div>`;
+}
+
+function li(it){
+  let h = `<li><b>${it.t}</b>`;
+  if (it.nuevo) h += '<span class="chipn">nuevo</span>';
+  h += ` <span class="muted">· ${it.m}</span><br>${it.d}`;
+  if (it.tut) h += `<div class="tut">→ <a href="${TUT[it.tut]}" target="_blank" rel="noopener">${it.tutLabel||"Tutorial"}</a></div>`;
+  return h + '</li>';
+}
+
+function renderContenido(){
+  const w = WEEKS.find(x => x.id === week);
+  const d = w[mode];
+  const secName = SECTIONS.find(s => s.k === section).n;
+  let h = head() + `<h1>${secName}</h1>` + banner(w);
+
+  if (section === "pre") {
+    h += '<div class="block"><div class="bt">Material complementario:</div>'
+      + '<p>Te invitamos a revisar el siguiente material; no es de lectura obligatoria, pero ayudará a consolidar el aprendizaje de esta semana.</p>'
+      + `<p class="bt it">Recursos de la semana</p><ul class="bullet">${d.pre.map(li).join("")}</ul></div>`;
+    if (mode === "despues") h += '<div class="warn">Las guías en PDF de la tarea se incorporan aquí: el estudiante llega al encuentro sincrónico habiendo preparado el entregable.</div>';
+  }
+
+  if (section === "sinc") {
+    const s = d.sinc;
+    h += `<div class="block"><div class="bt">${s.t}</div><p class="muted">Duración estimada: ${s.m}</p>`
+      + `<ul class="bullet">${s.a.map(a => `<li>${a}</li>`).join("")}</ul></div>`;
+    if (mode === "despues") h += '<div class="warn">La teoría que habilita el entregable de la semana se dicta aquí. Ninguna actividad se pide antes de que su concepto se explique.</div>';
+  }
+
+  if (section === "post") {
+    h += '<div class="block"><div class="bt">Material complementario:</div>'
+      + `<p>${d.post.compTxt}</p><p class="bt it">Actividades:</p>`;
+    h += '<table class="acts"><thead><tr><th>Descripción</th><th>Ponderación</th></tr></thead><tbody>';
+    d.post.acts.forEach(a => {
+      let c1 = `<b>${a.t}</b>`;
+      if (a.nuevo) c1 += '<span class="chipn">nuevo</span>';
+      c1 += `<br>${a.d}`;
+      if (a.m) c1 += `<br><span class="muted">Tiempo estimado: ${a.m}</span>`;
+      if (a.hab) c1 += `<div class="hab">${a.hab}</div>`;
+      if (a.tut) c1 += `<div class="tut">→ <a href="${TUT[a.tut]}" target="_blank" rel="noopener">${a.tutLabel||"Tutorial"}</a></div>`;
+      c1 += `<div class="muted" style="color:var(--deadline);font-size:11.5px;margin-top:5px">Fecha límite: por definir en el aula</div>`;
+      h += `<tr><td>${c1}</td><td class="pond">${a.w}</td></tr>`;
+    });
+    h += '</tbody></table></div>';
+    if (mode === "despues") h += '<div class="warn">Se conserva la ponderación oficial: cambia la evidencia que se entrega, no el porcentaje.</div>';
+  }
+  document.getElementById("content").innerHTML = h;
+}
+
+function renderTareas(){
+  let h = head() + '<h1>Tareas</h1>';
+  h += '<table class="acts"><thead><tr><th>Descripción</th><th>Ponderación</th></tr></thead><tbody>';
+  EVAL.forEach(e => {
+    const t = mode === "antes" ? e.antes : e.despues;
+    h += `<tr><td><b>${e.s} · ${t}</b>${mode==="despues"&&e.antes!==e.despues?'<span class="chipn">nuevo</span>':''}`
+      + `<div class="muted" style="color:var(--deadline);font-size:11.5px;margin-top:5px">Fecha límite: por definir en el aula</div></td>`
+      + `<td class="pond">${e.w} de la calificación del curso</td></tr>`;
+  });
+  h += '</tbody></table>';
+  document.getElementById("content").innerHTML = h;
+}
+
+function renderCalificaciones(){
+  let h = head() + '<h1>Calificaciones</h1>';
+  h += '<div class="block"><p class="muted">Ponderaciones del curso. Sin cambios entre el aula actual y la propuesta: la evidencia cambia, el porcentaje no.</p></div>';
+  h += '<table class="acts"><thead><tr><th>Sesión</th><th>Actividad (aula actual)</th><th>Actividad (propuesta)</th><th>Ponderación</th></tr></thead><tbody>';
+  EVAL.forEach(e => {
+    h += `<tr><td><b>${e.s}</b></td><td>${e.antes}</td><td>${e.despues}</td><td class="pond">${e.w}</td></tr>`;
+  });
+  h += '</tbody><tfoot><tr><td colspan="3"><b>Total</b></td><td class="pond"><b>100 %</b></td></tr></tfoot></table>';
+  document.getElementById("content").innerHTML = h;
+}
+
+function renderRecursos(){
+  let h = head() + '<h1>Recursos y tutoriales</h1>';
+  h += '<div class="block"><p class="muted">Tutoriales paso a paso para ejecutar cada entregable sin conocimientos previos de programación.</p>'
+    + `<ul class="bullet">${RECURSOS.map(r => `<li><a href="${r.u}" target="_blank" rel="noopener">${r.t}</a></li>`).join("")}</ul></div>`;
+  document.getElementById("content").innerHTML = h;
+}
+
+function render(){
+  renderNav(); renderIndex();
+  if (view === "tareas") return renderTareas();
+  if (view === "calificaciones") return renderCalificaciones();
+  if (view === "recursos") return renderRecursos();
+  renderContenido();
+}
+
+document.getElementById("m-antes").onclick = () => { mode = "antes"; document.getElementById("m-antes").setAttribute("aria-pressed","true"); document.getElementById("m-despues").setAttribute("aria-pressed","false"); render(); };
+document.getElementById("m-despues").onclick = () => { mode = "despues"; document.getElementById("m-despues").setAttribute("aria-pressed","true"); document.getElementById("m-antes").setAttribute("aria-pressed","false"); render(); };
+
+render();
+</script>
+</body>
+</html>
